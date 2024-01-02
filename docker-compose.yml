@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:latest
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+
+  php:
+    build:
+      context: ./php-fpm
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/var/www/html
+    networks:
+      - redeBdg
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./backend:/var/www/html/backend
+      # Quando o react estiver pronto rodar npm run build para criar arquivos estáticos e jogar no servidor.
+      # - ./frontend:/var/www/html/frontend
+    ports:
+      - "80:80"
+      - "3030:3030"
+    depends_on:
+      - php
+    # Adicione esta seção para configurar o Nginx para trabalhar com o PHP-FPM
+    links:
+      - php
+    networks:
+      - redeBdg
+
+  react:
+    image: node:latest
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: ["npm", "start"]
+    ports:
+      - "3000:3000"
+    networks:
+      - redeBdg
+
+networks:
+  redeBdg:
+    driver: bridge
